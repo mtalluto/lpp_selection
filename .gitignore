@@ -28,3 +28,11 @@ lib/*
 *.exe
 *.out
 *.app
+serotiny_model
+
+# latex junk for the docs
+*.pdf
+*.bbl
+*.blg
+*.aux
+*.log
