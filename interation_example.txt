@@ -1,0 +1,4 @@
+fireRotation 100 400 5
+#fireProbability 0.002 0.01 0.0002
+#predation 0 2 0.01
+squirrelDensity 0 1.5 0.25

@@ -1,0 +1,6 @@
+numReps 1000
+numYears 2000
+outputFrequency -1
+outputStandAge 100
+outputYears 2000
+endStandAge 101

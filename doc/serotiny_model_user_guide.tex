@@ -1,0 +1,114 @@
+\documentclass[12pt, english]{article}
+\usepackage[verbose,letterpaper,tmargin=2.54cm,bmargin=2.54cm,lmargin=2.54cm,rmargin=2.54cm]{geometry}	% set page margins
+\usepackage{natbib}
+
+\title{Serotiny Model User's Guide}
+\author{}
+\date{} % delete this line to display the current date
+
+%%% BEGIN DOCUMENT
+\begin{document}
+
+\maketitle
+NOTE: This guide is intended to give the user basic information on HOW to build and run the model. It does not provide information on WHAT the model does (beyond parameter descriptions). For information on what the model actually does, see the model description.
+
+\section{Compiling}
+The model includes a makefile. Assuming the directory structure is not changed, it should be enough to cd to the directory containing the makefile and run make. In addition to having make installed on the computer, it will be necessary to have g++ (or another compiler, in which case you will need to change the CC = field in the makefile). Also, the GNU scientific library (GSL) is required. The makefile assumes that the GSL is installed and the compiler knows where to search for it when linking. If this is not true (which will be obvious -- the compiler will fail during linking), you will either need to change your compiler flags or update the makefile to find the GSL. See the GSL documentation, and also your compiler's documentation, for details.
+
+\section{Command Line Arguments}
+The model may be run with no arguments at all. The following arguments are optional:
+\begin{itemize}
+	\item{-p \textless filename\textgreater: Specifies a file for specifying input parameters. Default is "parameters.txt." If this file is not found, the model will throw a warning and proceed using all default parameters.}
+	\item{-i \textless filename\textgreater: Specifies an iteration file. Default is "iteration.txt." If the file is absent, the model will throw a warning and proceed without iteration.}
+\end{itemize}
+
+\section{Input File Format}
+When setting input parameters, the model by default looks for a file named "parameters.txt" in the directory from which the model was invoked. This can be overridden using the -p option on the command line. If the file cannot be found, the model proceeds using default parameters (see section \ref{sec:user-set}).
+
+To parameters are specified by whitespace (excluding newlines) delimited lists of the format: name val val val, where name is the parameter name and val specifies a particular value to set. Comments can be embedded by preceding them with the \# character; this works both to comment out the end of a line and to comment out an entire line. Blank lines are ignored, and each line contains a single parameter. See section \ref{sec:user-set} for a list of parameters that can be set this way and acceptable values for each parameter.
+
+\section{Iteration File Format}
+The iteration file is in a similar format to the parameter file (whitespace delimited, with the first object on a line being the parameter name), but there are some important differences. First, only scalar (i.e., single-value) parameters can be iterated; trying to iterate a vector value will cause an error. The only exception to this is the predation parameter (see below).
+
+To iterate a scalar, put a line in the iteration file as follows:\\
+parameterName start end step\\
+The parameter name is the name of the parameter to be iterated; all parameters that expect a scalar value are supported. Start is the minimum value in the iteration, end is the ending value, and step gives the size of the steps to iterate. For example, 0 10 2 would iterate over the values 0, 2, 4, 6, 8, 10.
+
+For predation, do not use the actual names of the predation parameters given below. Instead, use the special name "predation" and follow it by three values as above. These three values are multipliers, and will be applied to the \emph{median} values for predation rates; if these median values are not specified in the parameter file, the defaults will be used. For example, a predation multiplier of 0.5 means that predation rates for that model run will be half the rates given in the median predation rate parameters. Use caution, as it is possible to obtain impossible probabilities using this method (for example, trying to iterate negative numbers, or iterating up to 2 when the median predation value is greater than 0.5). One way to avoid this problem is to treat the median predation rates as a maximum, and iterate no higher than 1 when specifying the predation iterator.
+
+\section{Output}
+Output will be in the form of two comma delimited text files, called ``population\_history.csv'' and ``fire\_history.csv''. These files will be written to the same directory from which the model was invoked. If the files exist, they will be overwritten without warning, so use caution and move data files from previous model runs before running the model. The fire history file contains a list of model runs (specified by individual ID) along with every year in which a fire occurred. The population history file contains statistics about each model population at user-specified time steps. By default the model outputs a single line every 10 years. This can be changed by setting parameters in the parameter file; see section \ref{subsec:output} for details.
+
+\section{User-settable Parameters}
+\label{sec:user-set}
+The following list gives parameters that can be set via the parameter file. Parameter names are case insensitive. Following each parameter name is an indicator of whether the parameter expects a scalar or a vector. If a vector is given to a scalar parameter, only the first value is used. A description of the parameter is then given, along with any default values and (where applicable) a citation for the default.
+
+\subsection{Population \& Landscape Parameters}
+\begin{itemize}
+	\item{maxPopDensity: scalar\\The density of a climax (fully mature) population.\\Default: 1200 individuals/ha\\Citation: \citealt{Kashian2005}}
+	\item{rickerR (or just R): scalar\\Intrinsic rate of increase for the ricker population growth model.\\Default: 0.05}
+	\item{selfThinInt: scalar\\Intercept and slope for self-thinning curve.\\Default: 14.63611 \\Citation: \citealt{Kashian2005}}
+	\item{selfThinSlope: scalar\\Intercept and slope for self-thinning curve.\\Default: -1.39351\\Citation: \citealt{Kashian2005}}
+	\item{serotinousInfill: scalar\\Accepts a 1 or a 0, indicating whether serotinous trees below the serotinyAgeThreshold value are allowed to contribute to infilling.\\Default: 1\\Citation: \citealt{Lotan1976,Critchfield1980}}
+	\item{startingAge: scalar\\ The age of starting populations.\\Default: same as ageAtAdulthood}
+\end{itemize}
+
+\subsection{Plant-Level Parameters}
+\begin{itemize}
+	\item{ageAtAdulthood: scalar\\How old is a plant when it is a full adult (and thus the stand is at max density)? Determines the starting stand age as well.\\Default: 200\\Citation: \citealt{Kashian2005}}
+	\item{diMortalityRate: scalar\\The probability that an adult will die during the density-independent mortality phase of the model.\\Default: 0.005\\Citation: \citealt{vanMantgem2009}}
+	\item{serotinyAgeThreshold: scalar\\Age at which serotinous plants start producing closed cones (and thus stop contributing to infilling).\\Default: 30\\Citation: \citealt{Lotan1976, Lotan1983}}
+	\item{seedProductionThreshold: scalar\\Age at which plants can first produce seeds.\\Default: 10}
+\end{itemize}
+
+\subsection{Predation Parameters}
+\begin{itemize}
+	\item{predationRateNSer: scalar\\Predation rate for nonserotinous cones.\\Default: n/a (disabled)}
+	\item{predationRateSer: vector\\List of predation rates for serotinous cones. The first value is for first year cones, the second value is for young cones, and the third is for old weathered cones.\\Default: n/a (disabled)}
+	\item{predationNumYears: scalar\\When calculating the overall proportion of cones removed from serotinous plants, this parameter determines how long to assume predation is important (after which predation is effectively 0).\\Default: 10}
+	\item{oldConeThreshold: scalar\\Determines how old a cone is before it is considered weathered and uses the third predation rate.\\Default: 11}
+	\item{densToDist: vector\\Gives intercept and slope of relationship between log(squirrel density) and distance to midden; intermediate step for distToSurv.\\Default: 58.58318, -21.21574 }
+	\item{distToSurvInt, distToSurvIntS: scalars\\Intercepts of relationship between distance to midden and logit(survival); for serotinous cones, add the two, for ns cones, just use the first.\\Defaults: -0.5743626 -1.7654844}
+	\item{distToSurvSlope, distToSurvSlopeS: scalars\\Slopes of relationship between distance to midden and logit(survival); for serotinous cones, add the two, for ns cones, just use the first.\\Defaults: 0.0334646 0.0157716}
+%	\item{distToSurv: vector\\Gives relationship between distance to midden and logit(survival) in the following order: intercept, effect of serotinous green cones, effect of serotinous brown cones, slope for distance, slope for distance for serotinous green cones, slope for distance for serotinous brown cones. Must subtract this from 1 to get the predation rates.\\Default: -0.445374794, -0.443477064, 0.552419299, 0.032296137, 0.003129301, 0.024102732}
+	\item{squirrelDensity: scalar\\Density of squirrels, used to compute predation rates.\\Default: 0}
+	
+\end{itemize}
+
+\subsection{Fire Parameters}
+\begin{itemize}
+	\item{burnAge: scalar\\Age at which a stand is mature enough to carry a fire.\\Default: 100\\Citation: \citealt{Turner1994}}
+	\item{fireFrequency: scalar\\If set (it is by default), fires are deterministic, and will occur every n years.\\Default: 250\\Citation: \citealt{Schoennagel2003}}
+	\item{fireMortalityRate: scalar\\Probability an individual dies in a fire.\\Default: 1}
+	\item{fireProbability: scalar\\Probability of a fire occurring in a given year. If set, fires are a stochastic process (i.e., they happen randomly).\\Default: n/a}
+	\item{fireRotation: scalar\\Inverse of fireProbability. Accepted because it may be easier to specify mean fireRotation rather than a probability\\Default: n/a}
+	\item{immigrationRate: scalar\\Intercept of the relationship between pre-fire frequency of serotiny and postfire stand density.\\Default: 6.556999 \\
+	Citation: \citealt{Turner2003, Benkman2008}}
+	\item{postfireDensitySlope: scalar\\Slope of the relationship between pre-fire frequency of serotiny and postfire stand density.\\Default: 8.869651 \\
+	Citation: \citealt{Turner2003, Benkman2008}}
+\end{itemize}
+
+\subsection{Model Settings}
+\begin{itemize}
+	\item{numReps: scalar\\How many times to run each parameter combination.\\Default:1}
+	\item{numYears: scalar\\How many years to run the model.\\Default: 1000}
+	\item{startingFreqSerotiny: scalar\\Frequency of serotiny in the starting population.\\Default: 0.25}
+	\item{startingPopDensity: scalar\\The density of the starting population.\\Default: Equal to maxPopDensity}
+	\item{numGenerations: scalar\\ The number of generations to run the model; if specified, overrides numYears}
+\end{itemize}
+
+\subsection{Output Control}
+\label{subsec:output}
+\begin{itemize}
+	\item{endStandAge: scalar\\When specified, the model will run for numYears, then continue reaching until the stand is equal to the specified age. When combined with other output parameters, this allows for output of the format ``output the first y-year old stand after running for at least n years.'' To do this, set endYears = outputStandAge + 1 and set outputYears = numYears.\\Default: n/a	}
+	\item{outputFrequency: scalar\\Default output mode. Produces a line of output every n years.\\Default: 10}
+	\item{outputStandAge: vector\\List of stand ages at which to produce output. A single value here can be combined with outputYears. When combined with outputYears, the model will output if the current year is greater than or equal to a value in output years AND the stand age equals the outputStandAge. Furthermore, it will only output once for each value in outputYears.\\Default: n/a}
+	\item{outputYears: vector\\List of specific years for outputting. Can be used in conjunction with outputStandAge (see above). If combined with outputFrequency, the model will produce output under either condition.\\Default: n/a}
+
+\end{itemize}
+
+\bibliographystyle{ecology}
+\renewcommand\refname{Literature Cited}
+\bibliography{user_guide_bib}{}
+
+\end{document}
